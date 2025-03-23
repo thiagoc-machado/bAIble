@@ -1,0 +1,13 @@
+django
+django-environ
+graphene-django
+djangorestframework
+dj-rest-auth
+django-allauth
+psycopg2-binary
+pytest
+pytest-django
+wheel
+requests
+PyJWT
+cryptography

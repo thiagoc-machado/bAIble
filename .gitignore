@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.log
+*.pot
+*.pyc
+
+# Django
+*.pyc
+*.pyo
+*.pyd
+db.sqlite3
+media/
+staticfiles/
+.env
+
+# Virtualenv
+venv/
+ENV/
+env/
+.venv/
+
+# VSCode
+.vscode/
+
+# Migrations (opcional, se quiser ignorar no início)
+**/migrations/*.py
+!**/migrations/__init__.py
+
+# Logs
+*.log
+
+# Pytest
+htmlcov/
+.coverage
+.cache
+.pytest_cache/
+
+# OS
+.DS_Store
+Thumbs.db
