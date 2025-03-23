@@ -13,3 +13,4 @@ PyJWT
 cryptography
 pytest 
 pytest-django
+djangorestframework-simplejwt
