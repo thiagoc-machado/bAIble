@@ -101,4 +101,4 @@ GRAPHENE = {
 # Static
 STATIC_URL = 'static/'
 
-# JWT opcional futuramente
+USE_TZ = False
