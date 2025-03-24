@@ -1,10 +1,11 @@
 #!/bin/bash
 
-# Executa as migrações
 echo "Executando migrações..."
 python manage.py makemigrations --noinput
 python manage.py migrate --noinput
 
-# Inicia o servidor Gunicorn
+echo "Coletando arquivos estáticos..."
+python manage.py collectstatic --noinput
+
 echo "Iniciando servidor Gunicorn..."
-exec gunicorn backend.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 120 
+exec gunicorn backend.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 120
