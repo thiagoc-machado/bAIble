@@ -29,13 +29,15 @@ COPY . .
 RUN useradd -m appuser && chown -R appuser:appuser /app
 USER appuser
 
-# Coleta arquivos estáticos e faz as migrações
-RUN python manage.py collectstatic --noinput \
-    && python manage.py makemigrations --noinput \
-    && python manage.py migrate --noinput
+# Coleta arquivos estáticos
+RUN python manage.py collectstatic --noinput
 
 # Expõe a porta definida na variável de ambiente
 EXPOSE $PORT
 
+# Script de inicialização
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 # Comando para iniciar o servidor
-CMD gunicorn backend.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 120 
+ENTRYPOINT ["/entrypoint.sh"] 
