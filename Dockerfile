@@ -16,7 +16,7 @@ RUN apt-get update \
         libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copia os arquivos de requisitos
+# Copia apenas os arquivos de requisitos primeiro
 COPY requirements.txt .
 
 # Instala as dependências Python
@@ -25,12 +25,17 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copia o código fonte
 COPY . .
 
-# Coleta arquivos estáticos
-RUN python manage.py collectstatic --noinput
-RUN python manage.py makemigrations
-RUN python manage.py migrate
+# Cria um usuário não-root para segurança
+RUN useradd -m appuser && chown -R appuser:appuser /app
+USER appuser
+
+# Coleta arquivos estáticos e faz as migrações
+RUN python manage.py collectstatic --noinput \
+    && python manage.py makemigrations --noinput \
+    && python manage.py migrate --noinput
+
 # Expõe a porta definida na variável de ambiente
 EXPOSE $PORT
 
 # Comando para iniciar o servidor
-CMD gunicorn backend.wsgi:application --bind 0.0.0.0:$PORT 
+CMD gunicorn backend.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 120 
