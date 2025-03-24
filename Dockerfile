@@ -29,9 +29,6 @@ COPY . .
 RUN useradd -m appuser && chown -R appuser:appuser /app
 USER appuser
 
-# Coleta arquivos estáticos
-RUN python manage.py collectstatic --noinput
-
 # Expõe a porta definida na variável de ambiente
 EXPOSE $PORT
 
