@@ -73,9 +73,21 @@ TEMPLATES = [{
 WSGI_APPLICATION = 'baible.wsgi.application'
 
 # Banco de dados
+# DATABASES = {
+#     'default': env.db(),
+# }
+
 DATABASES = {
-    'default': env.db(),
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': env('DB_NAME'),
+        'USER': env('DB_USER'),
+        'PASSWORD': env('DB_PASSWORD'),
+        'HOST': env('DB_HOST'),
+        'PORT': env('DB_PORT'),
+    }
 }
+
 
 # Autenticação
 AUTHENTICATION_BACKENDS = (
@@ -114,7 +126,4 @@ REST_FRAMEWORK = {
 # Configurações do CORS
 CORS_ALLOW_ALL_ORIGINS = True  # Em desenvolvimento
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
+CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
