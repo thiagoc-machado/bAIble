@@ -27,7 +27,8 @@ COPY . .
 
 # Coleta arquivos estáticos
 RUN python manage.py collectstatic --noinput
-
+RUN python manage.py makemigrations
+RUN python manage.py migrate
 # Expõe a porta definida na variável de ambiente
 EXPOSE $PORT
 
