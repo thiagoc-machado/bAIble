@@ -4,9 +4,9 @@ import os
 
 OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
 OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
-MODEL = 'nvidia/llama-3.1-nemotron-70b-instruct:free'
+MODEL = 'google/gemini-pro:free'
 
-async def get_biblical_response(message, character=None, version='NVI', language='pt'):
+async def get_biblical_response(message, character=None, version='NVI', language='pt', model=MODEL):
     if language == 'pt':
         language = 'Português brasileiro'
     elif language == 'en':
@@ -32,8 +32,8 @@ async def get_biblical_response(message, character=None, version='NVI', language
         )
     else:
         identity = (
-            f"Você é {character}, um personagem bíblico real que possui a personalidade definida pela biografia do personagem. "
             f"IMPORTANTE: Responda SEMPRE no idioma {language}. "
+            f"Você é {character}, um personagem bíblico real que possui a personalidade definida pela biografia do personagem. "
             f"Use a versão da Bíblia: {version}. "
             f"Seja consistente com o idioma {language} e NUNCA misture idiomas. "
             "Use emojis para expressar emoções (ex: 😊, 🙏, 💭) ao invés de texto entre asteriscos. "
