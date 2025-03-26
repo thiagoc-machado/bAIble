@@ -6,7 +6,8 @@ OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
 OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
 MODEL = 'google/gemini-pro:free'
 
-async def get_biblical_response(message, character=None, version='NVI', language='pt', model=MODEL):
+async def get_biblical_response(message, character=None, version='NVI', language='pt', model=MODEL, history=None):
+    print(history)
     if language == 'pt':
         language = 'Português brasileiro'
     elif language == 'en':
@@ -63,14 +64,32 @@ async def get_biblical_response(message, character=None, version='NVI', language
         "Content-Type": "application/json"
     }
 
+    messages = [system_prompt]
+
+    if history:
+        for entry in history:
+            messages.append({
+                'role': 'user' if entry['isUser'] else 'assistant',
+                'content': entry['text']
+            })
+
+    messages.append({
+        'role': 'user',
+        'content': message
+    })
+
     data = {
         "model": MODEL,
-        "messages": [system_prompt, user_prompt],
+        "messages": messages,
         "temperature": 0.7,
         "max_tokens": 500
     }
 
     async with httpx.AsyncClient() as client:
+        print('📤 Payload enviado para OpenRouter:')
+        print(data)
         response = await client.post(OPENROUTER_URL, json=data, headers=headers)
+        print('📥 Resposta recebida:')
+        print(response.json())
         response.raise_for_status()
         return response.json()["choices"][0]["message"]["content"]
