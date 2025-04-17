@@ -58,7 +58,7 @@ ROOT_URLCONF = 'baible.urls'
 
 TEMPLATES = [{
     'BACKEND': 'django.template.backends.django.DjangoTemplates',
-    'DIRS': [os.path.join(BASE_DIR, 'dist')],
+    'DIRS': [os.path.join(BASE_DIR, 'templates')],
     'APP_DIRS': True,
     'OPTIONS': {
         'context_processors': [
@@ -112,9 +112,6 @@ GRAPHENE = {
     'SCHEMA': 'baible.schema.schema'
 }
 
-# Static
-STATIC_URL = 'static/'
-
 USE_TZ = False
 
 REST_FRAMEWORK = {
@@ -128,9 +125,12 @@ CORS_ALLOW_ALL_ORIGINS = True  # Em desenvolvimento
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
 
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'dist/assets'),
-]
+# Static
+STATIC_URL = 'static/'
+
+# STATICFILES_DIRS = [
+#     os.path.join(BASE_DIR, 'dist/assets'),
+# ]
 
 # importante se estiver usando collectstatic
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')

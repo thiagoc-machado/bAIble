@@ -1,13 +1,39 @@
 # biblia_messages/services/openrouter.py
 import httpx
 import os
+from ..rag import buscar_versiculos_relevantes
 
-OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
-OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
-MODEL = 'google/gemini-pro:free'
+SERVER_AI = os.getenv('SERVER_AI')
+print(f'🚀 Iniciando o serviço com SERVER_AI: {SERVER_AI}')
+
+response = None
+MODEL = ''
+if SERVER_AI=='openrouter':
+    OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
+    OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
+    MODEL = 'google/gemini-pro:free'
+elif SERVER_AI=='groq':
+    GROQ_API_KEY = os.getenv('GROQ_API_KEY')
+    GROQ_URL = os.getenv('GROQ_ENDPOINT', 'https://api.groq.com/openai/v1/chat/completions')
+    MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct'
+else:
+    print(f'🚨 ERRO: SERVER_AI não definido corretamente: {SERVER_AI}')
+    raise ValueError("SERVER_AI não está definido corretamente. Use 'openrouter' ou 'groq'.")
+    ...
 
 async def get_biblical_response(message, character=None, version='NVI', language='pt', model=MODEL, history=None):
-    print(history)
+    if SERVER_AI == 'groq':
+        model = MODEL
+        version= 'almeida_rc'
+    try:
+        versiculos_contexto = buscar_versiculos_relevantes(
+            message,
+            language.lower(),
+            version.lower(),
+        )
+        contexto_biblico = '\n'.join(versiculos_contexto)
+    except Exception as e:
+        contexto_biblico = '⚠️ Não foi possível carregar o contexto bíblico para esta pergunta.'
     if language == 'pt':
         language = 'Português brasileiro'
     elif language == 'en':
@@ -56,17 +82,28 @@ async def get_biblical_response(message, character=None, version='NVI', language
         "content": identity
     }
 
+    context_prompt = {
+        'role': 'system',
+        'content': f'Trechos relevantes das Escrituras para consulta:\n{contexto_biblico}'
+    }
+
     user_prompt = {
         "role": "user",
         "content": message
     }
-
-    headers = {
+    if SERVER_AI == 'openrouter':
+        headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json"
     }
+    elif SERVER_AI == 'groq':
+        headers = {
+            'Authorization': f'Bearer {GROQ_API_KEY}',
+            'Content-Type': 'application/json'
+        }
+    
 
-    messages = [system_prompt]
+    messages = [system_prompt, context_prompt]
 
     if history:
         for entry in history:
@@ -81,7 +118,7 @@ async def get_biblical_response(message, character=None, version='NVI', language
     })
 
     data = {
-        "model": MODEL,
+        "model": model,
         "messages": messages,
         "temperature": 0.7,
         "max_tokens": 500
@@ -90,8 +127,13 @@ async def get_biblical_response(message, character=None, version='NVI', language
     async with httpx.AsyncClient() as client:
         print('📤 Payload enviado para OpenRouter:')
         print(data)
-        response = await client.post(OPENROUTER_URL, json=data, headers=headers)
-        print('📥 Resposta recebida:')
+        if SERVER_AI == 'openrouter':
+            response = await client.post(OPENROUTER_URL, json=data, headers=headers)
+            print('📥 Resposta recebida (OpenRoute):')
+        elif SERVER_AI == 'groq':
+            response = await client.post(GROQ_URL, json=data, headers=headers)
+            print('📥 Resposta recebida (Groq):')
+        
         print(response.json())
         response.raise_for_status()
         return response.json()["choices"][0]["message"]["content"]
