@@ -21,19 +21,33 @@ else:
     raise ValueError("SERVER_AI não está definido corretamente. Use 'openrouter' ou 'groq'.")
     ...
 
-async def get_biblical_response(message, character=None, version='NVI', language='pt', model=MODEL, history=None):
+# Função para buscar versículos relevantes
+async def get_biblical_response(
+    message,
+    character=None,
+    version='NVI',
+    language='pt',
+    model=MODEL,
+    history=None,
+    context=None
+):
     if SERVER_AI == 'groq':
         model = MODEL
         version= 'almeida_rc'
-    try:
-        versiculos_contexto = buscar_versiculos_relevantes(
-            message,
-            language.lower(),
-            version.lower(),
-        )
-        contexto_biblico = '\n'.join(versiculos_contexto)
-    except Exception as e:
-        contexto_biblico = '⚠️ Não foi possível carregar o contexto bíblico para esta pergunta.'
+    if context:
+        contexto_biblico = context
+        print("frontend processing context")
+    else:
+        print("backend processing context")
+        try:
+            versiculos_contexto = buscar_versiculos_relevantes(
+                message,
+                language,
+                version
+            )
+            contexto_biblico = '\n'.join(versiculos_contexto)
+        except Exception as e:
+            contexto_biblico = '⚠️ Não foi possível carregar o contexto bíblico para esta pergunta.'
     if language == 'pt':
         language = 'Português brasileiro'
     elif language == 'en':
