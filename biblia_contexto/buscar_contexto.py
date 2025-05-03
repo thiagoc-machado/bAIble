@@ -15,7 +15,7 @@ _cache = {
     'last_used': 0
 }
 
-TIMEOUT = 10  # 2 minutos de inatividade
+TIMEOUT = 120  # 2 minutos de inatividade
 
 
 def unload_after_timeout():
