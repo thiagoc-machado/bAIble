@@ -48,7 +48,7 @@ async def get_biblical_response(
             contexto_biblico = '\n'.join([f"{v['referencia']}: {v['texto']}" for v in versiculos_contexto])
         except Exception as e:
             print(f"❌ Erro ao buscar contexto bíblico: {e}")
-    contexto_biblico = '⚠️ Não foi possível carregar o contexto bíblico para esta pergunta.'
+            contexto_biblico = '⚠️ Não foi possível carregar o contexto bíblico para esta pergunta.'
     if language == 'pt':
         language = 'Português brasileiro'
     elif language == 'en':
@@ -99,13 +99,9 @@ async def get_biblical_response(
 
     context_prompt = {
         'role': 'system',
-        'content': f'Trechos relevantes das Escrituras para consulta:\n{contexto_biblico}'
+        'content': f'Versículos relevantes:\n{contexto_biblico}'
     }
 
-    user_prompt = {
-        "role": "user",
-        "content": message
-    }
     if SERVER_AI == 'openrouter':
         headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",

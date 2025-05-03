@@ -17,3 +17,4 @@ def start_memory_cleaner():
                 buscar_contexto._cache['metadados'] = None
 
     Thread(target=cleaner, daemon=True).start()
+    

@@ -5,6 +5,7 @@ import time
 import faiss
 import numpy as np
 from pathlib import Path
+import torch
 
 # Armazena recursos em cache com controle de tempo
 _cache = {
@@ -14,7 +15,7 @@ _cache = {
     'last_used': 0
 }
 
-TIMEOUT = 120  # 2 minutos de inatividade
+TIMEOUT = 10  # 2 minutos de inatividade
 
 
 def unload_after_timeout():
@@ -23,6 +24,7 @@ def unload_after_timeout():
         _cache['model'] = None
         _cache['index'] = None
         _cache['metadados'] = None
+        torch.cuda.empty_cache()
 
 
 def get_model():
