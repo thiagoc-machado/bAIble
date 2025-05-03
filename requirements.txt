@@ -59,7 +59,7 @@ pillow==10.4.0
 pip-api==0.0.34
 pip-requirements-parser==32.0.1
 pip_audit==2.7.3
-pkg_resources==0.0.0
+# pkg_resources==0.0.0
 pluggy==1.5.0
 promise==2.3
 psycopg2-binary==2.9.10
