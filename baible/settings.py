@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'progress',
     'biblia_messages',
     'monitoring',
+    'biblia_contexto',
 ]
 
 MIDDLEWARE = [

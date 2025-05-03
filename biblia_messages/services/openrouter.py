@@ -1,7 +1,7 @@
 # biblia_messages/services/openrouter.py
 import httpx
 import os
-from ..rag import buscar_versiculos_relevantes
+from biblia_contexto.buscar_contexto import buscar_contexto
 
 SERVER_AI = os.getenv('SERVER_AI')
 print(f'🚀 Iniciando o serviço com SERVER_AI: {SERVER_AI}')
@@ -40,14 +40,15 @@ async def get_biblical_response(
     else:
         print("backend processing context")
         try:
-            versiculos_contexto = buscar_versiculos_relevantes(
+            versiculos_contexto = buscar_contexto(
                 message,
-                language,
-                version
+                idioma=language,
+                versao=version
             )
-            contexto_biblico = '\n'.join(versiculos_contexto)
+            contexto_biblico = '\n'.join([f"{v['referencia']}: {v['texto']}" for v in versiculos_contexto])
         except Exception as e:
-            contexto_biblico = '⚠️ Não foi possível carregar o contexto bíblico para esta pergunta.'
+            print(f"❌ Erro ao buscar contexto bíblico: {e}")
+    contexto_biblico = '⚠️ Não foi possível carregar o contexto bíblico para esta pergunta.'
     if language == 'pt':
         language = 'Português brasileiro'
     elif language == 'en':
