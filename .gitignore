@@ -44,3 +44,7 @@ Thumbs.db
 embeddings/
 
 embeddings/**/models/paraphrase-multilingual-MiniLM-L12-v2/
+embeddings/*
+**/models/paraphrase-multilingual-MiniLM-L12-v2/*
+/biblia_contexto/models/paraphrase-multilingual-MiniLM-L12-v2/*
+
