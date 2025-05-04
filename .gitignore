@@ -41,5 +41,6 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
-
 embeddings/
+
+embeddings/**/models/paraphrase-multilingual-MiniLM-L12-v2/
