@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
     'graphene_django',
+    'django_celery_beat',
 
     # Apps locais
     'accounts',
@@ -135,3 +136,8 @@ STATIC_URL = 'static/'
 
 # importante se estiver usando collectstatic
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
+CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='redis://localhost:6379/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'

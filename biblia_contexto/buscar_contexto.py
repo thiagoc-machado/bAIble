@@ -1,49 +1,39 @@
 # biblia_contexto/buscar_contexto.py
 
 import json
-import time
 import faiss
 import torch
 import numpy as np
 from pathlib import Path
 from transformers import AutoTokenizer, AutoModel
+import os
+
+REPO_ID = os.getenv('HUGGINGFACE_REPO_ID')
+TOKEN = os.getenv('HUGGINGFACE_TOKEN')
 
 _cache = {
     'tokenizer': None,
     'model': None,
     'index': None,
     'metadados': None,
-    'last_used': 0
 }
 
-TIMEOUT = 120  # segundos
-
-
-def unload_after_timeout():
-    if time.time() - _cache['last_used'] > TIMEOUT:
-        print('⏳ Tempo de inatividade excedido. Liberando memória...')
-        _cache['model'] = None
-        _cache['tokenizer'] = None
-        _cache['index'] = None
-        _cache['metadados'] = None
-        torch.cuda.empty_cache()
-
+REPO_ID = os.getenv('HUGGINGFACE_REPO_ID', 'thiagocmach/paraphrase-pt-bible')
 
 def get_tokenizer_and_model():
-    unload_after_timeout()
     if _cache['model'] is None or _cache['tokenizer'] is None:
-        print('🔄 Carregando modelo de embeddings com float16...')
-        path = 'biblia_contexto/models/paraphrase-multilingual-MiniLM-L12-v2'
-        _cache['tokenizer'] = AutoTokenizer.from_pretrained(path)
-        _cache['model'] = AutoModel.from_pretrained(path, torch_dtype=torch.float16).eval()
-    _cache['last_used'] = time.time()
+        print('🔄 Carregando modelo remoto do Hugging Face...')
+        _cache['tokenizer'] = AutoTokenizer.from_pretrained(REPO_ID, token=TOKEN)
+        _cache['model'] = AutoModel.from_pretrained(REPO_ID, torch_dtype=torch.float32, token=TOKEN).eval()
+        print(f'📡 Usando REPO_ID: {REPO_ID}')
+        print(f'🔑 Token presente: {"Sim" if TOKEN else "Não"}')
     return _cache['tokenizer'], _cache['model']
-
 
 def get_index_and_metadados(idioma, versao):
     if _cache['index'] is None or _cache['metadados'] is None:
-        print('📦 Carregando índice FAISS e metadados...')
+        print('📦 Carregando índice FAISS e metadados locais...')
         index_path = f'biblia_contexto/indices/{idioma}/{versao}.index'
+        print(f'🔍 Usando índice: {index_path}')
         metadata_path = f'biblia_contexto/indices/{idioma}/{versao}_metadados.json'
 
         if not Path(index_path).exists() or not Path(metadata_path).exists():
@@ -52,9 +42,7 @@ def get_index_and_metadados(idioma, versao):
         _cache['index'] = faiss.read_index(index_path, faiss.IO_FLAG_MMAP)
         with open(metadata_path, 'r', encoding='utf-8') as f:
             _cache['metadados'] = json.load(f)
-    _cache['last_used'] = time.time()
     return _cache['index'], _cache['metadados']
-
 
 def embed_text(texto):
     tokenizer, model = get_tokenizer_and_model()
@@ -69,7 +57,6 @@ def embed_text(texto):
         counted = torch.clamp(mask.sum(1), min=1e-9)
         mean_pooled = summed / counted
         return mean_pooled[0].cpu().numpy()
-
 
 def buscar_contexto(pergunta, idioma='pt', versao='almeida_rc', top_k=5):
     index, metadados = get_index_and_metadados(idioma, versao)

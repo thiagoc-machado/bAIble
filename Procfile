@@ -1,1 +1,3 @@
-web: python manage.py migrate && python manage.py collectstatic --noinput && gunicorn backend.wsgi:application --bind 0.0.0.0:$PORT 
+web: sh /app/entrypoint.sh
+worker: celery -A baible worker --loglevel=info
+beat: celery -A baible beat --loglevel=info

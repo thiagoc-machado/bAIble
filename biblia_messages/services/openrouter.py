@@ -2,6 +2,7 @@
 import httpx
 import os
 from biblia_contexto.buscar_contexto import buscar_contexto
+import traceback
 
 SERVER_AI = os.getenv('SERVER_AI')
 print(f'🚀 Iniciando o serviço com SERVER_AI: {SERVER_AI}')
@@ -47,7 +48,8 @@ async def get_biblical_response(
             )
             contexto_biblico = '\n'.join([f"{v['referencia']}: {v['texto']}" for v in versiculos_contexto])
         except Exception as e:
-            print(f"❌ Erro ao buscar contexto bíblico: {e}")
+            print("❌ Erro ao buscar contexto bíblico:")
+            traceback.print_exc()
             contexto_biblico = '⚠️ Não foi possível carregar o contexto bíblico para esta pergunta.'
     if language == 'pt':
         language = 'Português brasileiro'
