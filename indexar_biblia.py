@@ -4,13 +4,26 @@ import json
 import os
 import faiss
 import numpy as np
-from sentence_transformers import SentenceTransformer
+import torch
+from transformers import AutoTokenizer, AutoModel
+from tqdm import tqdm
 
-model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')
+# Carrega modelo E5
+tokenizer = AutoTokenizer.from_pretrained('intfloat/e5-large-v2')
+model = AutoModel.from_pretrained('intfloat/e5-large-v2').eval()
 
 def embed_text(texto):
-    emb = model.encode([texto], normalize_embeddings=True)[0]
-    return emb
+    texto = 'passage: ' + texto.strip()  # obrigatório para o modelo e5
+    inputs = tokenizer(texto, return_tensors='pt', truncation=True, padding=True)
+    with torch.no_grad():
+        outputs = model(**inputs)
+        emb = outputs.last_hidden_state
+        mask = inputs['attention_mask'].unsqueeze(-1).expand(emb.size())
+        masked = emb * mask
+        summed = masked.sum(1)
+        counted = mask.sum(1)
+        mean_pooled = (summed / counted).squeeze().cpu().numpy()
+        return mean_pooled
 
 def indexar_versao(idioma, versao):
     print(f'📖 Indexando: {idioma}/{versao}...')
@@ -22,7 +35,7 @@ def indexar_versao(idioma, versao):
     embeddings = []
     metadados = []
 
-    for i, v in enumerate(versiculos):
+    for i, v in enumerate(tqdm(versiculos, desc="🔍 Processando versículos")):
         referencia = f'{v["book_name"]} {v["chapter"]}:{v["verse"]}'
         texto = v['text']
         texto_para_embedding = f'{referencia}: {texto}'
@@ -49,5 +62,5 @@ def indexar_versao(idioma, versao):
 
 if __name__ == '__main__':
     indexar_versao('pt', 'almeida_ra')
-    indexar_versao('en', 'kjv')
-    indexar_versao('es', 'rv_1858')
+    # indexar_versao('en', 'kjv')
+    # indexar_versao('es', 'rv_1858')

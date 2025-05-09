@@ -5,8 +5,8 @@ import faiss
 import torch
 import numpy as np
 from pathlib import Path
-from transformers import AutoTokenizer, AutoModel
 import os
+import httpx
 
 REPO_ID = os.getenv('HUGGINGFACE_REPO_ID')
 TOKEN = os.getenv('HUGGINGFACE_TOKEN')
@@ -44,23 +44,41 @@ def get_index_and_metadados(idioma, versao):
             _cache['metadados'] = json.load(f)
     return _cache['index'], _cache['metadados']
 
+# def embed_text(texto):
+#     tokenizer, model = get_tokenizer_and_model()
+#     inputs = tokenizer(texto, return_tensors='pt', truncation=True, padding=True)
+
+#     with torch.no_grad():
+#         outputs = model(**inputs)
+#         embeddings = outputs.last_hidden_state
+#         mask = inputs['attention_mask'].unsqueeze(-1).expand(embeddings.size())
+#         masked_embeddings = embeddings * mask
+#         summed = torch.sum(masked_embeddings, dim=1)
+#         counted = torch.clamp(mask.sum(1), min=1e-9)
+#         mean_pooled = summed / counted
+#         return mean_pooled[0].cpu().numpy()
+
 def embed_text(texto):
-    tokenizer, model = get_tokenizer_and_model()
-    inputs = tokenizer(texto, return_tensors='pt', truncation=True, padding=True)
+    url = 'https://thiagocmach-bible-embeddings-api.hf.space/embed'
+    headers = {
+        'Authorization': f'Bearer {os.getenv("EMBEDDING_API_TOKEN")}',
+        'Content-Type': 'application/json'
+    }
+    try:
+        response = httpx.post(url, json={'texto': texto}, headers=headers, timeout=10)
+        response.raise_for_status()
+        return np.array(response.json()['embedding'], dtype='float32')
+    except Exception as e:
+        print(f'❌ Erro ao consultar o modelo remoto: {e}')
+        return np.zeros(384, dtype='float32')  # fallback
 
-    with torch.no_grad():
-        outputs = model(**inputs)
-        embeddings = outputs.last_hidden_state
-        mask = inputs['attention_mask'].unsqueeze(-1).expand(embeddings.size())
-        masked_embeddings = embeddings * mask
-        summed = torch.sum(masked_embeddings, dim=1)
-        counted = torch.clamp(mask.sum(1), min=1e-9)
-        mean_pooled = summed / counted
-        return mean_pooled[0].cpu().numpy()
-
-def buscar_contexto(pergunta, idioma='pt', versao='almeida_rc', top_k=5):
+def buscar_contexto(pergunta, idioma='pt', versao='almeida_ra', character='biblia', top_k=5):
     index, metadados = get_index_and_metadados(idioma, versao)
-    pergunta_exp = f'O que a Bíblia diz sobre: {pergunta}'
+    # 📌 Incluímos o personagem como o destinatário da pergunta para contextualizar a busca
+    pergunta_exp = f'Baseado na Bíblia, como {character} responderia à pergunta: {pergunta}?'
+    print(50*'=')
+    print(f'{pergunta_exp}')
+    print(50*'=')
     pergunta_emb = embed_text(pergunta_exp).astype('float32').reshape(1, -1)
     distancias, indices = index.search(pergunta_emb, top_k)
     return [metadados[idx] for idx in indices[0]]

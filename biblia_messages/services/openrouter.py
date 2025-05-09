@@ -9,18 +9,28 @@ print(f'🚀 Iniciando o serviço com SERVER_AI: {SERVER_AI}')
 
 response = None
 MODEL = ''
-if SERVER_AI=='openrouter':
-    OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
-    OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
-    MODEL = 'google/gemini-pro:free'
-elif SERVER_AI=='groq':
-    GROQ_API_KEY = os.getenv('GROQ_API_KEY')
-    GROQ_URL = os.getenv('GROQ_ENDPOINT', 'https://api.groq.com/openai/v1/chat/completions')
-    MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct'
-else:
-    print(f'🚨 ERRO: SERVER_AI não definido corretamente: {SERVER_AI}')
-    raise ValueError("SERVER_AI não está definido corretamente. Use 'openrouter' ou 'groq'.")
-    ...
+
+# Lista de serviços configuráveis
+services = [
+    {
+        'name': 'groq',
+        'url': os.getenv('GROQ_ENDPOINT', 'https://api.groq.com/openai/v1/chat/completions'),
+        'model': 'meta-llama/llama-4-scout-17b-16e-instruct',
+        'headers': {
+            'Authorization': f'Bearer {os.getenv("GROQ_API_KEY")}',
+            'Content-Type': 'application/json'
+        },
+    },
+    {
+        'name': 'openrouter',
+        'url': 'https://openrouter.ai/api/v1/chat/completions',
+        'model': 'meta-llama/llama-4-scout:free',
+        'headers': {
+            'Authorization': f'Bearer {os.getenv("OPENROUTER_API_KEY")}',
+            'Content-Type': 'application/json'
+        },
+    },
+]
 
 # Função para buscar versículos relevantes
 async def get_biblical_response(
@@ -28,13 +38,13 @@ async def get_biblical_response(
     character=None,
     version='NVI',
     language='pt',
-    model=MODEL,
+    model=None,
     history=None,
     context=None
 ):
     if SERVER_AI == 'groq':
-        model = MODEL
-        version= 'almeida_rc'
+        version = 'almeida_ra'
+
     if context:
         contexto_biblico = context
         print("frontend processing context")
@@ -44,20 +54,22 @@ async def get_biblical_response(
             versiculos_contexto = buscar_contexto(
                 message,
                 idioma=language,
-                versao=version
+                versao=version,
+                character=character
             )
             contexto_biblico = '\n'.join([f"{v['referencia']}: {v['texto']}" for v in versiculos_contexto])
         except Exception as e:
             print("❌ Erro ao buscar contexto bíblico:")
             traceback.print_exc()
             contexto_biblico = '⚠️ Não foi possível carregar o contexto bíblico para esta pergunta.'
+
     if language == 'pt':
         language = 'Português brasileiro'
     elif language == 'en':
         language = 'Inglês americano'
     elif language == 'es':
         language = 'Espanhol espanha'
-        
+
     if character == 'bible':
         identity = (
             f"📜 Você é a Bíblia, um mentor espiritual sábio e acolhedor. Você responde EXCLUSIVAMENTE com base na versão bíblica {version}, seguindo estritamente os princípios da fé cristã evangélica.\n\n"
@@ -94,6 +106,7 @@ async def get_biblical_response(
             f"Se a pergunta envolver temas modernos ou tecnológicos, explique educadamente que está fora do seu contexto histórico.\n"
             f"Seja sábio, profundo, porém sempre compreensível e acolhedor, mantendo sua personalidade bíblica autêntica."
         )
+
     system_prompt = {
         "role": "system",
         "content": identity
@@ -103,18 +116,6 @@ async def get_biblical_response(
         'role': 'system',
         'content': f'Versículos relevantes:\n{contexto_biblico}'
     }
-
-    if SERVER_AI == 'openrouter':
-        headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    elif SERVER_AI == 'groq':
-        headers = {
-            'Authorization': f'Bearer {GROQ_API_KEY}',
-            'Content-Type': 'application/json'
-        }
-    
 
     messages = [system_prompt, context_prompt]
 
@@ -131,22 +132,26 @@ async def get_biblical_response(
     })
 
     data = {
-        "model": model,
+        "model": '',  # será atribuído dinamicamente
         "messages": messages,
         "temperature": 0.7,
         "max_tokens": 500
     }
-
+    print(f'📦 Dados enviados para o serviço: {data}')
     async with httpx.AsyncClient() as client:
-        print('📤 Payload enviado para OpenRouter:')
-        print(data)
-        if SERVER_AI == 'openrouter':
-            response = await client.post(OPENROUTER_URL, json=data, headers=headers)
-            print('📥 Resposta recebida (OpenRoute):')
-        elif SERVER_AI == 'groq':
-            response = await client.post(GROQ_URL, json=data, headers=headers)
-            print('📥 Resposta recebida (Groq):')
+        for service in services:
+            print(f'📤 Tentando com: {service["name"]}')
+            data['model'] = service['model']
+            try:
+                response = await client.post(service['url'], json=data, headers=service['headers'])
+                response.raise_for_status()
+                print(f'📥 Resposta recebida ({service["name"]}):')
+                print(response.json())
+                return response.json()['choices'][0]['message']['content']
+            except httpx.HTTPStatusError as e:
+                print(f'❌ Erro HTTP com {service["name"]}: {e.response.status_code} - {e.response.text}')
+            except Exception as e:
+                print(f'⚠️ Erro inesperado com {service["name"]}: {e}')
         
-        print(response.json())
-        response.raise_for_status()
-        return response.json()["choices"][0]["message"]["content"]
+
+        raise RuntimeError('❌ Todos os serviços falharam ao processar a requisição.')
