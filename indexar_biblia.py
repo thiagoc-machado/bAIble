@@ -52,10 +52,10 @@ def indexar_versao(idioma, versao):
     index = faiss.IndexFlatL2(vetor_np.shape[1])
     index.add(vetor_np)
 
-    os.makedirs(f'biblia_contexto/indices/{idioma}', exist_ok=True)
-    faiss.write_index(index, f'biblia_contexto/indices/{idioma}/{versao}.index')
+    os.makedirs(f'indices/bible-indices/{idioma}', exist_ok=True)
+    faiss.write_index(index, f'indices/bible-indices/{idioma}/{versao}.index')
 
-    with open(f'biblia_contexto/indices/{idioma}/{versao}_metadados.json', 'w', encoding='utf-8') as f:
+    with open(f'indices/bible-indices/{idioma}/{versao}_metadados.json', 'w', encoding='utf-8') as f:
         json.dump(metadados, f, ensure_ascii=False, indent=2)
 
     print(f'✅ Indexação finalizada: {len(versiculos)} versículos processados.')

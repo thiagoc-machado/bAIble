@@ -7,6 +7,7 @@ import numpy as np
 from pathlib import Path
 import os
 import httpx
+from huggingface_hub import hf_hub_download
 
 REPO_ID = os.getenv('HUGGINGFACE_REPO_ID')
 TOKEN = os.getenv('HUGGINGFACE_TOKEN')
@@ -30,20 +31,24 @@ def get_tokenizer_and_model():
     return _cache['tokenizer'], _cache['model']
 
 def get_index_and_metadados(idioma, versao):
-    if _cache['index'] is None or _cache['metadados'] is None:
-        print('📦 Carregando índice FAISS e metadados locais...')
-        index_path = f'biblia_contexto/indices/{idioma}/{versao}.index'
-        print(f'🔍 Usando índice: {index_path}')
-        metadata_path = f'biblia_contexto/indices/{idioma}/{versao}_metadados.json'
+    print('📦 Buscando índice e metadados do Hugging Face...')
+    repo_id = 'thiagocmach/bible-indices'
+    filename_index = f'{idioma}/{versao}.index'
+    filename_metadata = f'{idioma}/{versao}_metadados.json'
 
-        if not Path(index_path).exists() or not Path(metadata_path).exists():
-            raise FileNotFoundError('❌ Arquivos de índice ou metadados não encontrados.')
+    try:
+        index_path = hf_hub_download(repo_id=repo_id, filename=filename_index, repo_type='dataset')
+        metadata_path = hf_hub_download(repo_id=repo_id, filename=filename_metadata, repo_type='dataset')
+    except Exception as e:
+        print(f'❌ Erro ao baixar arquivos do Hugging Face: {e}')
+        raise FileNotFoundError('❌ Arquivos de índice ou metadados não encontrados.')
 
-        _cache['index'] = faiss.read_index(index_path, faiss.IO_FLAG_MMAP)
-        with open(metadata_path, 'r', encoding='utf-8') as f:
-            _cache['metadados'] = json.load(f)
-    return _cache['index'], _cache['metadados']
+    print(f'🔍 Índice carregado: {filename_index}')
+    index = faiss.read_index(index_path)
+    with open(metadata_path, 'r', encoding='utf-8') as f:
+        metadados = json.load(f)
 
+    return index, metadados
 # def embed_text(texto):
 #     tokenizer, model = get_tokenizer_and_model()
 #     inputs = tokenizer(texto, return_tensors='pt', truncation=True, padding=True)
