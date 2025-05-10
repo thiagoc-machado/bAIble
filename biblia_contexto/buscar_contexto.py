@@ -49,19 +49,6 @@ def get_index_and_metadados(idioma, versao):
         metadados = json.load(f)
 
     return index, metadados
-# def embed_text(texto):
-#     tokenizer, model = get_tokenizer_and_model()
-#     inputs = tokenizer(texto, return_tensors='pt', truncation=True, padding=True)
-
-#     with torch.no_grad():
-#         outputs = model(**inputs)
-#         embeddings = outputs.last_hidden_state
-#         mask = inputs['attention_mask'].unsqueeze(-1).expand(embeddings.size())
-#         masked_embeddings = embeddings * mask
-#         summed = torch.sum(masked_embeddings, dim=1)
-#         counted = torch.clamp(mask.sum(1), min=1e-9)
-#         mean_pooled = summed / counted
-#         return mean_pooled[0].cpu().numpy()
 
 def embed_text(texto):
     url = 'https://thiagocmach-bible-embeddings-api.hf.space/embed'
