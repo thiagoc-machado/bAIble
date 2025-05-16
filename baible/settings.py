@@ -125,7 +125,8 @@ REST_FRAMEWORK = {
 # Configurações do CORS
 CORS_ALLOW_ALL_ORIGINS = True  # Em desenvolvimento
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
+# CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
+CORS_ALLOW_ALL_ORIGINS = True  # Em desenvolvimento
 
 # Static
 STATIC_URL = 'static/'

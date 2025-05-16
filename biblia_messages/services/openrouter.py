@@ -43,6 +43,12 @@ async def get_biblical_response(
     context=None
 ):
     # if SERVER_AI == 'groq':
+    if language == 'pt':
+        version = 'almeida_ra'
+    elif language == 'en':
+        version = 'kjv'
+    elif language == 'es':
+        version = 'rv_1858'
     #     version = 'almeida_ra'
 
     if context:

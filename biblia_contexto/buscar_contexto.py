@@ -8,8 +8,10 @@ from pathlib import Path
 import os
 import httpx
 from huggingface_hub import hf_hub_download
+from transformers import AutoTokenizer, AutoModel
 
-REPO_ID = os.getenv('HUGGINGFACE_REPO_ID')
+REPO_ID = os.getenv('HUGGINGFACE_REPO_ID')           # Para o modelo
+REPO_INDEX = os.getenv('HUGGINGFACE_REPO_INDEX')     # Para os índices FAISS
 TOKEN = os.getenv('HUGGINGFACE_TOKEN')
 
 _cache = {
@@ -19,26 +21,33 @@ _cache = {
     'metadados': None,
 }
 
-REPO_ID = os.getenv('HUGGINGFACE_REPO_ID', 'thiagocmach/paraphrase-pt-bible')
-
 def get_tokenizer_and_model():
     if _cache['model'] is None or _cache['tokenizer'] is None:
         print('🔄 Carregando modelo remoto do Hugging Face...')
         _cache['tokenizer'] = AutoTokenizer.from_pretrained(REPO_ID, token=TOKEN)
         _cache['model'] = AutoModel.from_pretrained(REPO_ID, torch_dtype=torch.float32, token=TOKEN).eval()
-        print(f'📡 Usando REPO_ID: {REPO_ID}')
+        print(f'📡 Modelo carregado: {REPO_ID}')
         print(f'🔑 Token presente: {"Sim" if TOKEN else "Não"}')
     return _cache['tokenizer'], _cache['model']
 
 def get_index_and_metadados(idioma, versao):
     print('📦 Buscando índice e metadados do Hugging Face...')
-    repo_id = 'thiagocmach/bible-indices'
     filename_index = f'{idioma}/{versao}.index'
     filename_metadata = f'{idioma}/{versao}_metadados.json'
 
     try:
-        index_path = hf_hub_download(repo_id=repo_id, filename=filename_index, repo_type='dataset')
-        metadata_path = hf_hub_download(repo_id=repo_id, filename=filename_metadata, repo_type='dataset')
+        index_path = hf_hub_download(
+            repo_id=REPO_INDEX,
+            filename=filename_index,
+            repo_type='dataset',
+            token=TOKEN
+        )
+        metadata_path = hf_hub_download(
+            repo_id=REPO_INDEX,
+            filename=filename_metadata,
+            repo_type='dataset',
+            token=TOKEN
+        )
     except Exception as e:
         print(f'❌ Erro ao baixar arquivos do Hugging Face: {e}')
         raise FileNotFoundError('❌ Arquivos de índice ou metadados não encontrados.')
@@ -50,6 +59,7 @@ def get_index_and_metadados(idioma, versao):
 
     return index, metadados
 
+
 def embed_text(texto):
     url = 'https://thiagocmach-bible-embeddings-api.hf.space/embed'
     headers = {
@@ -57,17 +67,17 @@ def embed_text(texto):
         'Content-Type': 'application/json'
     }
     try:
-        response = httpx.post(url, json={'texto': texto}, headers=headers, timeout=10)
+        response = httpx.post(url, json={'texto': texto}, headers=headers, timeout=20)
         response.raise_for_status()
         return np.array(response.json()['embedding'], dtype='float32')
     except Exception as e:
         print(f'❌ Erro ao consultar o modelo remoto: {e}')
-        return np.zeros(384, dtype='float32')  # fallback
+        return np.zeros(64, dtype='float32')  # fallback
 
 def buscar_contexto(pergunta, idioma='pt', versao='almeida_ra', character='biblia', top_k=5):
     index, metadados = get_index_and_metadados(idioma, versao)
     # 📌 Incluímos o personagem como o destinatário da pergunta para contextualizar a busca
-    pergunta_exp = f'Baseado na Bíblia, como {character} responderia à pergunta: {pergunta}?'
+    pergunta_exp = f'Baseado na Bíblia, agindo exatamente como {character}, responda à mensagem: {pergunta}'
     print(50*'=')
     print(f'{pergunta_exp}')
     print(50*'=')
