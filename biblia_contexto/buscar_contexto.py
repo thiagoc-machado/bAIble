@@ -9,6 +9,8 @@ import os
 import httpx
 from huggingface_hub import hf_hub_download
 from transformers import AutoTokenizer, AutoModel
+import gc
+import tempfile
 
 REPO_ID = os.getenv('HUGGINGFACE_REPO_ID')           # Para o modelo
 REPO_INDEX = os.getenv('HUGGINGFACE_REPO_INDEX')     # Para os índices FAISS
@@ -35,27 +37,25 @@ def get_index_and_metadados(idioma, versao):
     filename_index = f'{idioma}/{versao}.index'
     filename_metadata = f'{idioma}/{versao}_metadados.json'
 
-    try:
+    with tempfile.TemporaryDirectory() as tmpdir:
         index_path = hf_hub_download(
             repo_id=REPO_INDEX,
             filename=filename_index,
             repo_type='dataset',
-            token=TOKEN
+            token=TOKEN,
+            cache_dir=tmpdir
         )
         metadata_path = hf_hub_download(
             repo_id=REPO_INDEX,
             filename=filename_metadata,
             repo_type='dataset',
-            token=TOKEN
+            token=TOKEN,
+            cache_dir=tmpdir
         )
-    except Exception as e:
-        print(f'❌ Erro ao baixar arquivos do Hugging Face: {e}')
-        raise FileNotFoundError('❌ Arquivos de índice ou metadados não encontrados.')
 
-    print(f'🔍 Índice carregado: {filename_index}')
-    index = faiss.read_index(index_path)
-    with open(metadata_path, 'r', encoding='utf-8') as f:
-        metadados = json.load(f)
+        index = faiss.read_index(index_path)
+        with open(metadata_path, 'r', encoding='utf-8') as f:
+            metadados = json.load(f)
 
     return index, metadados
 
@@ -76,11 +76,16 @@ def embed_text(texto):
 
 def buscar_contexto(pergunta, idioma='pt', versao='almeida_ra', character='biblia', top_k=5):
     index, metadados = get_index_and_metadados(idioma, versao)
-    # 📌 Incluímos o personagem como o destinatário da pergunta para contextualizar a busca
-    pergunta_exp = f'Baseado na Bíblia, agindo exatamente como {character}, responda à mensagem: {pergunta}'
-    print(50*'=')
-    print(f'{pergunta_exp}')
-    print(50*'=')
+    pergunta_exp = f"According to the Bible, answering strictly as {character}, respond to the message: {pergunta}"
+    print('=' * 50)
+    print(pergunta_exp)
+    print('=' * 50)
+
     pergunta_emb = embed_text(pergunta_exp).astype('float32').reshape(1, -1)
     distancias, indices = index.search(pergunta_emb, top_k)
-    return [metadados[idx] for idx in indices[0]]
+    resultados = [metadados[idx] for idx in indices[0]]
+
+    del index, metadados
+    gc.collect()
+
+    return resultados
