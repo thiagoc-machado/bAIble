@@ -59,7 +59,6 @@ def get_index_and_metadados(idioma, versao):
 
     return index, metadados
 
-
 def embed_text(texto):
     url = 'https://thiagocmach-bible-embeddings-api.hf.space/embed'
     headers = {
