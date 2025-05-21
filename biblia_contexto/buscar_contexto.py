@@ -37,25 +37,22 @@ def get_index_and_metadados(idioma, versao):
     filename_index = f'{idioma}/{versao}.index'
     filename_metadata = f'{idioma}/{versao}_metadados.json'
 
-    with tempfile.TemporaryDirectory() as tmpdir:
-        index_path = hf_hub_download(
-            repo_id=REPO_INDEX,
-            filename=filename_index,
-            repo_type='dataset',
-            token=TOKEN,
-            cache_dir=tmpdir
-        )
-        metadata_path = hf_hub_download(
-            repo_id=REPO_INDEX,
-            filename=filename_metadata,
-            repo_type='dataset',
-            token=TOKEN,
-            cache_dir=tmpdir
-        )
+    index_path = hf_hub_download(
+        repo_id=REPO_INDEX,
+        filename=filename_index,
+        repo_type='dataset',
+        token=TOKEN
+    )
+    metadata_path = hf_hub_download(
+        repo_id=REPO_INDEX,
+        filename=filename_metadata,
+        repo_type='dataset',
+        token=TOKEN
+    )
 
-        index = faiss.read_index(index_path)
-        with open(metadata_path, 'r', encoding='utf-8') as f:
-            metadados = json.load(f)
+    index = faiss.read_index(index_path)
+    with open(metadata_path, 'r', encoding='utf-8') as f:
+        metadados = json.load(f)
 
     return index, metadados
 
