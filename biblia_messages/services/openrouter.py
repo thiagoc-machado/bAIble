@@ -4,6 +4,7 @@ import os
 from biblia_contexto.buscar_contexto import buscar_contexto
 import traceback
 
+
 SERVER_AI = os.getenv('SERVER_AI')
 print(f'🚀 Iniciando o serviço com SERVER_AI: {SERVER_AI}')
 
